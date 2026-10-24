@@ -1,0 +1,31 @@
+[versions]
+java = "21"
+springBoot = "3.3.5"
+jsoup = "1.18.1"
+wiremock = "3.9.1"
+junit = "5.11.3"
+assertj = "3.26.3"
+jqwik = "1.9.1"
+jmh = "1.37"
+micrometer = "1.13.6"
+slf4j = "2.0.16"
+logback = "1.5.12"
+checkstyle = "10.18.2"
+
+[libraries]
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
+wiremock = { module = "org.wiremock:wiremock", version.ref = "wiremock" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+jqwik = { module = "net.jqwik:jqwik", version.ref = "jqwik" }
+micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
+micrometer-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version = "1.1.6" }
+jmh = { id = "me.champeau.jmh", version = "0.7.2" }
