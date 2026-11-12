@@ -37,7 +37,7 @@ RUN sf-indexer/build/install/sf-indexer/bin/sf-indexer \
       --out /index-demo
 
 # ---- 3. Pick the index: a verified Release download, or the demo index ----
-FROM alpine:3.22 AS index
+FROM alpine:3.24 AS index
 ARG INDEX_URL=""
 ARG INDEX_SHA256=""
 COPY --from=build /index-demo /index-demo
