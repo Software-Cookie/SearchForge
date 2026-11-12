@@ -6,7 +6,7 @@
 #     --build-arg INDEX_SHA256=<sha256 of index.tgz> .  # a real crawl index from a Release
 
 # ---- 1. Build the React UI ----
-FROM node:24-alpine AS ui
+FROM node:25-alpine AS ui
 WORKDIR /ui
 COPY ui/package.json ui/package-lock.json ./
 RUN npm ci --no-audit --no-fund
