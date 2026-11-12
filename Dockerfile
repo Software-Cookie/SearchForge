@@ -53,7 +53,7 @@ RUN set -eu; \
     test -f /index/meta.properties
 
 # ---- 4. Runtime: JRE only, non-root user ----
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:24-jre
 RUN useradd --system --uid 10001 --home-dir /app --shell /usr/sbin/nologin sf
 WORKDIR /app
 COPY --from=build /src/sf-api/build/libs/sf-api.jar app.jar
