@@ -46,7 +46,7 @@ class AnalysisTest {
 
     @Test
     void tokenizesUnicodeWithOffsetsAndPositions() {
-        List<Analyzer.Token> t = Analyzer.tokenize("Hello, Wörld! 東京 x2" + " a".repeat(0));
+        List<Analyzer.Token> t = Analyzer.tokenize("Hello, Wörld! 東京 x2");
         assertThat(t).extracting(Analyzer.Token::surface)
                 .containsExactly("hello", "wörld", "東京", "x2");
         assertThat(t.get(1).start()).isEqualTo(7);

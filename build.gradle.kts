@@ -60,7 +60,6 @@ subprojects {
         toolVersion = catalog.versions.checkstyle.get()
         configFile = rootProject.file("config/checkstyle/checkstyle.xml")
         maxWarnings = 0
-        isIgnoreFailures = false // Violations fail the build; drop noisy rules from checkstyle.xml instead
     }
 
     tasks.withType<JacocoReport>().configureEach {
@@ -128,7 +127,6 @@ project(":sf-api") {
         "implementation"(project(":sf-core"))
         "implementation"(project(":sf-query"))
         "implementation"(project(":sf-indexer"))
-        // web starter was renamed in Boot 4
         "implementation"("org.springframework.boot:spring-boot-starter-webmvc")
         "implementation"("org.springframework.boot:spring-boot-starter-actuator")
         "implementation"("com.github.ben-manes.caffeine:caffeine")

@@ -12,9 +12,6 @@ out/
 .vscode/
 .DS_Store
 
-# Property-test state (now written under build/; kept for older checkouts)
-.jqwik-database
-
 # Crawls and indexes are large; indexes are published as GitHub Releases instead
 data/
 *.tgz

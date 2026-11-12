@@ -87,7 +87,7 @@ public final class RobotsTxtParser {
                         g.delay()[0] = Math.max(g.delay()[0], (long) (seconds * 1000));
                     }
                 } catch (NumberFormatException ignored) {
-                    // malformed crawl-delay lines are skipped, as browsers and Google do
+                    // a malformed crawl-delay value is ignored
                 }
             }
             default -> {

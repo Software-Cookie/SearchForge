@@ -4,9 +4,8 @@
     "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
 <!--
-  VeloKV style rules. Formatting is enforced by Spotless (google-java-format),
-  so this file focuses on size limits and code-smell checks.
-  Javadoc checks are intentionally off: the project uses // comments above methods.
+  SearchForge Checkstyle rules: size limits and code-smell checks.
+  Javadoc checks are off; classes and methods are documented with // comments.
 -->
 <module name="Checker">
   <property name="charset" value="UTF-8"/>

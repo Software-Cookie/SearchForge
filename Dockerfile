@@ -14,8 +14,8 @@ COPY ui/ ./
 RUN npm run build
 
 # ---- 2. Build the API jar (with the UI inside) and the demo index ----
-# The official Gradle image (same version as the wrapper) avoids downloading Gradle at build
-# time, which is faster and works on networks that block GitHub release downloads.
+# The official Gradle image avoids downloading Gradle at build time, which is faster and
+# works on networks that block GitHub release downloads.
 FROM gradle:9.8.2-jdk21 AS build
 WORKDIR /src
 COPY settings.gradle.kts build.gradle.kts ./

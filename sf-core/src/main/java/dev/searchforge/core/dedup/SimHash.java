@@ -52,8 +52,7 @@ public final class SimHash {
         return Long.bitCount(a ^ b);
     }
 
-    // Adds the fingerprint unless a near-duplicate is already stored.
-    // Returns true when the fingerprint was new (not a near-duplicate).
+    // Adds the fingerprint and returns true, unless a near-duplicate is already stored.
     public synchronized boolean addIfNew(long fp) {
         for (int i = 0; i < BANDS; i++) {
             List<Long> bucket = bands.get(i).get(band(fp, i));
