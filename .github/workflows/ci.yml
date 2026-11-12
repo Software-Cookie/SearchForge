@@ -26,7 +26,7 @@ jobs:
           distribution: temurin
 
       - name: Set up Gradle (with cache)
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Build, test, Checkstyle, 80% coverage gate
         run: ./gradlew build --no-daemon
