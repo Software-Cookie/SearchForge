@@ -1,0 +1,16 @@
+# Render Blueprint: Dashboard -> New -> Blueprint -> pick this repo.
+# One free Docker web service; the image contains the UI, the API and the index.
+services:
+  - type: web
+    name: searchforge
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SEARCHFORGE_PROXY_HOPS
+        value: "1"

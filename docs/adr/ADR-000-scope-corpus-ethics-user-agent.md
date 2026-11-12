@@ -27,7 +27,7 @@ SearchForge requires a well-defined crawling scope, corpus boundary, and strict 
 ### 1. Identifying User-Agent
 Every HTTP request initiated by `sf-crawler` MUST send the standard header:
 ```http
-User-Agent: SearchForgeBot/1.0 (+https://github.com/your-username/searchforge; bot@searchforge.dev)
+User-Agent: SearchForgeBot/1.0 (+https://github.com/Software-Cookie/searchforge; sivaprasadpearlapaati@gmail.com)
 Accept: text/html,application/xhtml+xml
 ```
 

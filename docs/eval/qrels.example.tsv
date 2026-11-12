@@ -1,0 +1,4 @@
+# query<TAB>url<TAB>grade (0 = not relevant, 1 = somewhat, 2 = relevant, 3 = perfect)
+# Judge the top 10 results of each query by hand. Aim for 30 queries.
+porter stemmer	https://github.com/Software-Cookie/SearchForge/blob/main/docs/guide/parts/03-index-engine.md#311-the-porter-stemmer-martin-porter-1980-from-first-principles	3
+porter stemmer	https://github.com/Software-Cookie/SearchForge/blob/main/docs/guide/parts/03-index-engine.md#31-phase-3-text-pipeline-porter-stemmer--compression-codecs	2

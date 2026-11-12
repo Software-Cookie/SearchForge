@@ -1,0 +1,45 @@
+server:
+  port: ${PORT:8080}            # Render (and most hosts) set PORT; locally it is 8080
+  shutdown: graceful
+  forward-headers-strategy: none # ClientIp handles X-Forwarded-For explicitly
+  compression:
+    enabled: true
+    mime-types: application/json,application/problem+json,text/html,text/css,application/javascript,image/svg+xml
+  error:
+    include-stacktrace: never
+    include-message: never
+  tomcat:
+    max-swallow-size: 64KB
+    max-http-response-header-size: 16KB
+
+spring:
+  application:
+    name: searchforge
+  main:
+    banner-mode: "off"
+  threads:
+    virtual:
+      enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: 10s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
+searchforge:
+  index-dir: ${SEARCHFORGE_INDEX_DIR:data/index/demo}
+  memory-map: true
+  max-query-length: 200
+  query-timeout-ms: 500
+  rate-limit-per-second: ${SEARCHFORGE_RATE_LIMIT:10}
+  rate-limit-burst: 20
+  cache-size: 5000
+  trusted-proxy-hops: ${SEARCHFORGE_PROXY_HOPS:0}

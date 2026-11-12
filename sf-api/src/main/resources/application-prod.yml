@@ -1,0 +1,9 @@
+# Used on the public host (SPRING_PROFILES_ACTIVE=prod).
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health      # metrics stay private in production
+
+searchforge:
+  trusted-proxy-hops: ${SEARCHFORGE_PROXY_HOPS:1}   # Render puts one proxy in front of the app

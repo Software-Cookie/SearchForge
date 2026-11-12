@@ -1,12 +1,28 @@
+# Build output
 .gradle/
 build/
 bin/
 out/
+*.log
+*.tmp
+
+# IDEs and OS files
 .idea/
 *.iml
 .vscode/
-node_modules/
-dist/
-*.log
 .DS_Store
-*.tmp
+
+# Property-test state (now written under build/; kept for older checkouts)
+.jqwik-database
+
+# Crawls and indexes are large; indexes are published as GitHub Releases instead
+data/
+*.tgz
+
+# UI
+node_modules/
+ui/dist/
+
+# Secrets never belong in git
+.env
+.env.*
