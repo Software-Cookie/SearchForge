@@ -1,27 +1,43 @@
-// Typed client for the SearchForge API. Response shapes mirror SearchResult.java.
+// Typed client for the SearchForge live web search API (/api/web).
+// Response shapes mirror WebSearchResponse.java.
 
 export type Segment = { text: string; hit: boolean };
 
-export type Hit = { url: string; title: string; score: number; snippet: Segment[] };
+export type WebHit = {
+  url: string;
+  title: string;
+  site: string;
+  favicon: string | null;
+  thumbnail: string | null;
+  age: string;
+  snippet: Segment[];
+};
 
-export type SearchResponse = {
+export type ImageHit = {
+  title: string;
+  imageUrl: string;
+  thumbnailUrl: string;
+  pageUrl: string | null;
+  site: string;
+  width: number;
+  height: number;
+};
+
+export type SearchType = "web" | "images";
+
+export type WebResponse = {
   query: string;
-  totalHits: number;
-  tookMs: number;
+  type: SearchType;
   page: number;
-  size: number;
-  results: Hit[];
+  tookMs: number;
+  source: string;
+  hasMore: boolean;
   didYouMean: string | null;
+  results: WebHit[];
+  images: ImageHit[];
 };
 
-export type Stats = {
-  documents: number;
-  terms: number;
-  vocabulary: number;
-  indexCreatedAt: string;
-};
-
-export type ErrorKind = "rate-limited" | "too-slow" | "bad-query" | "server" | "network";
+export type ErrorKind = "rate-limited" | "upstream" | "bad-query" | "server" | "network";
 
 export class SearchError extends Error {
   constructor(public kind: ErrorKind) {
@@ -29,8 +45,8 @@ export class SearchError extends Error {
   }
 }
 
-export const PAGE_SIZE = 10;
 export const MAX_QUERY_LENGTH = 200;
+export const MAX_PAGE = 10;
 
 async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   let res: Response;
@@ -41,25 +57,27 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
     throw new SearchError("network");
   }
   if (res.status === 429) throw new SearchError("rate-limited");
-  if (res.status === 503) throw new SearchError("too-slow");
+  if (res.status === 502 || res.status === 503) throw new SearchError("upstream");
   if (res.status === 400) throw new SearchError("bad-query");
   if (!res.ok) throw new SearchError("server");
   return (await res.json()) as T;
 }
 
-export function search(q: string, page: number, signal?: AbortSignal) {
-  const params = new URLSearchParams({ q, page: String(page), size: String(PAGE_SIZE) });
-  return getJson<SearchResponse>(`/api/search?${params}`, signal);
+export function webSearch(q: string, type: SearchType, page: number, signal?: AbortSignal) {
+  const params = new URLSearchParams({ q, type, page: String(page) });
+  return getJson<WebResponse>(`/api/web?${params}`, signal);
 }
 
 export async function suggest(q: string, signal?: AbortSignal): Promise<string[]> {
   const data = await getJson<{ suggestions: string[] }>(
-    `/api/suggest?${new URLSearchParams({ q })}`,
+    `/api/web/suggest?${new URLSearchParams({ q })}`,
     signal,
   );
   return data.suggestions;
 }
 
-export function stats(signal?: AbortSignal) {
-  return getJson<Stats>("/api/stats", signal);
-}
+export const SOURCE_NAMES: Record<string, string> = {
+  brave: "Brave Search",
+  searxng: "SearXNG",
+  open: "Wikipedia, Hacker News, Openverse and Wikimedia Commons",
+};

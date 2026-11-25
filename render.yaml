@@ -14,3 +14,9 @@ services:
         value: prod
       - key: SEARCHFORGE_PROXY_HOPS
         value: "1"
+      # Live web results (ADR-003). Set ONE of these in the Render dashboard; with neither,
+      # the keyless open sources are used (Wikipedia, Hacker News, Openverse, Commons).
+      - key: BRAVE_API_KEY
+        sync: false
+      - key: SEARXNG_URL
+        sync: false

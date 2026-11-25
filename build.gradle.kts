@@ -130,6 +130,7 @@ project(":sf-api") {
         "implementation"("org.springframework.boot:spring-boot-starter-webmvc")
         "implementation"("org.springframework.boot:spring-boot-starter-actuator")
         "implementation"("com.github.ben-manes.caffeine:caffeine")
+        "implementation"(catalog.jsoup) // parses upstream snippet HTML into plain segments
         "implementation"(catalog.micrometer.core)
         "implementation"(catalog.micrometer.prometheus)
         "testImplementation"("org.springframework.boot:spring-boot-starter-test")
