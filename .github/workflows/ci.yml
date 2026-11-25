@@ -80,6 +80,9 @@ jobs:
           done
           curl -fsS http://localhost:8080/actuator/health
           curl -fsS "http://localhost:8080/api/search?q=porter+stemmer" | grep -q '"totalHits"'
+          curl -fsS http://localhost:8080/api/web/info | grep -q '"provider":"open"'
+          # live results from the keyless sources; a network hiccup must not fail CI
+          curl -sS "http://localhost:8080/api/web?q=house" | head -c 300 || true
           curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
           # metrics must not be public in production
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/actuator/prometheus)" = "404"

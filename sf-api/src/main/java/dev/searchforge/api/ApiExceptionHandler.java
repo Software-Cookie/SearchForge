@@ -1,5 +1,6 @@
 package dev.searchforge.api;
 
+import dev.searchforge.api.websearch.UpstreamException;
 import dev.searchforge.query.QueryTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,13 @@ public class ApiExceptionHandler {
     ResponseEntity<ProblemDetail> timeout(QueryTimeoutException e) {
         return problem(HttpStatus.SERVICE_UNAVAILABLE,
                 "The search took too long. Try a more specific query.");
+    }
+
+    @ExceptionHandler(UpstreamException.class)
+    ResponseEntity<ProblemDetail> upstream(UpstreamException e) {
+        LOG.warn("Live search source failed: {}", e.getMessage());
+        return problem(HttpStatus.BAD_GATEWAY,
+                "Web results are unavailable right now. Try again in a moment.");
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

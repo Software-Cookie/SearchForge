@@ -1,0 +1,29 @@
+# Local stack: SearchForge + a private SearXNG metasearch instance (free, no API keys).
+#
+#   docker compose up -d --build      # then open http://localhost:8090
+#
+# Set BRAVE_API_KEY in your shell (or a .env file next to this one) to use Brave instead;
+# a Brave key wins over SearXNG when both are set.
+services:
+  searxng:
+    image: searxng/searxng:latest
+    ports:
+      - "127.0.0.1:8888:8080"   # only reachable from this machine
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml
+    environment:
+      SEARXNG_BASE_URL: http://localhost:8888/
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-local-dev-only-change-me}
+    restart: unless-stopped
+
+  searchforge:
+    build: .
+    ports:
+      - "8090:8080"
+    environment:
+      SEARXNG_URL: http://searxng:8080
+      BRAVE_API_KEY: ${BRAVE_API_KEY:-}
+      SEARCHFORGE_PROXY_HOPS: "0"
+    depends_on:
+      - searxng
+    restart: unless-stopped

@@ -10,14 +10,14 @@ import java.nio.file.Path;
 import java.util.List;
 
 // Builds one small index for all API tests (once per JVM).
-final class TestIndex {
+public final class TestIndex {
 
     private static Path dir;
 
     private TestIndex() {
     }
 
-    static synchronized Path dir() {
+    public static synchronized Path dir() {
         if (dir == null) {
             try {
                 Path d = Files.createTempDirectory("sf-api-test").resolve("index");

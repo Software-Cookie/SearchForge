@@ -43,3 +43,11 @@ searchforge:
   rate-limit-burst: 20
   cache-size: 5000
   trusted-proxy-hops: ${SEARCHFORGE_PROXY_HOPS:0}
+  web:
+    # Live internet search. auto = Brave if BRAVE_API_KEY is set, else SearXNG if
+    # SEARXNG_URL is set, else keyless open sources (Wikipedia, Hacker News, Openverse, Commons).
+    provider: ${SEARCHFORGE_WEB_PROVIDER:auto}
+    brave-api-key: ${BRAVE_API_KEY:}
+    searxng-url: ${SEARXNG_URL:}
+    timeout-ms: 6000
+    cache-size: 2000

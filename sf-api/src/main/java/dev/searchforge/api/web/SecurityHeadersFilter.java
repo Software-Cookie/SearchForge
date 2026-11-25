@@ -17,8 +17,11 @@ import java.io.IOException;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class SecurityHeadersFilter extends OncePerRequestFilter {
 
+    // img-src allows https: because result thumbnails, favicons and image results are
+    // loaded straight from the sites that host them (with referrerpolicy=no-referrer).
     static final String CSP = "default-src 'self'; script-src 'self'; style-src 'self'; "
-            + "img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; "
+            + "img-src 'self' data: https:; font-src 'self'; connect-src 'self'; "
+            + "object-src 'none'; "
             + "base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 
     @Override

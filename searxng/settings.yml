@@ -1,0 +1,64 @@
+# SearXNG settings for SearchForge (https://docs.searxng.org/admin/settings/).
+# SearXNG queries public engines (Google, Bing, DuckDuckGo, Brave, Wikipedia, ...) and merges
+# their results. SearchForge reads it through the JSON API, so "json" must be enabled.
+use_default_settings: true
+
+# Engines are switched on or off by name. In testing from a home connection, Google,
+# DuckDuckGo, Qwant and Yahoo returned CAPTCHAs or "access denied", SearXNG's Brave scraper
+# returned broken links and Bing web returned unrelated pages, so they are off. "google cse"
+# (on by default) gave the most relevant results. Edit this list if your network differs.
+engines:
+  - name: google
+    disabled: true
+  - name: duckduckgo
+    disabled: true
+  - name: qwant
+    disabled: true
+  - name: yahoo
+    disabled: true
+  - name: brave
+    disabled: true
+  - name: bing
+    disabled: true
+  - name: mojeek
+    disabled: false
+  - name: startpage
+    disabled: false
+  - name: presearch
+    disabled: false
+  - name: wikipedia
+    disabled: false
+  - name: bing images
+    disabled: false
+  - name: wikicommons.images
+    disabled: false
+  - name: google images
+    disabled: true
+  - name: duckduckgo images
+    disabled: true
+  - name: qwant images
+    disabled: true
+
+outgoing:
+  request_timeout: 4.0
+
+general:
+  instance_name: "SearchForge metasearch"
+
+server:
+  # Overridden by the SEARXNG_SECRET environment variable; set a long random value.
+  secret_key: "set-SEARXNG_SECRET-instead"
+  limiter: false        # only SearchForge talks to it; SearchForge rate-limits users itself
+  image_proxy: false
+  public_instance: false
+
+search:
+  safe_search: 1        # moderate
+  autocomplete: ""
+  default_lang: "en"
+  formats:
+    - html
+    - json
+
+ui:
+  static_use_hash: true

@@ -1,9 +1,18 @@
 # SearchForge
 
-A web search engine written from first principles in Java 21: a polite crawler, a compressed
-positional inverted index built with external merge sort, BM25F ranking with a PageRank prior,
-autocomplete, spelling correction, and a React UI. No search libraries (no Lucene, no
-Elasticsearch).
+A clean, Google-style search page with **live internet results** (web pages, blogs, websites
+and images), backed by a web search engine written from first principles in Java 21: a polite
+crawler, a compressed positional inverted index built with external merge sort, BM25F ranking
+with a PageRank prior, autocomplete and spelling correction. No search libraries (no Lucene,
+no Elasticsearch).
+
+Live results come from one of three providers, chosen automatically (ADR-003):
+
+| Provider | Set | Results |
+|---|---|---|
+| Brave Search API (recommended) | `BRAVE_API_KEY` | Google-like web, blogs, news sites, images |
+| SearXNG, self-hosted | `SEARXNG_URL` | Google CSE web results, Bing Images, Commons (free, no key) |
+| Open sources (default) | nothing | Wikipedia, sites from Hacker News, Openverse and Commons images |
 
 **Live demo:** not deployed yet. See `docs/OPERATIONS.md` and the Go-Live plan.
 Free hosting note: the first visit after 15 idle minutes takes about a minute to wake the server.
@@ -16,8 +25,8 @@ Free hosting note: the first visit after 15 idle minutes takes about a minute to
 | `sf-crawler` | RFC 9309 robots.txt parser (longest match, wildcards, `$`), per-host politeness frontier (min-heap of host ready times, one request in flight per host), virtual-thread workers, SSRF guard, redirect handling, `noindex`/`nofollow`, resumable crawls |
 | `sf-indexer` | Unicode tokenizer, stopwords, Porter stemmer (1980), memory-bounded postings buffer that spills sorted runs and k-way merges them, VByte-compressed postings with positions, memory-mapped reader |
 | `sf-query` | Query syntax (AND, `OR`, `"phrases"`, `-exclude`), galloping intersection, BM25F (title 3x, headings 2x, body 1x) + PageRank prior, bounded top-K heap, snippet windows, top-K autocomplete trie, BK-tree spelling, deadline checks |
-| `sf-api` | Spring Boot 4.1: `/api/search`, `/api/suggest`, `/api/stats`, Caffeine result cache, per-IP token bucket (proxy-aware), security headers + CSP, RFC 9457 errors, Micrometer metrics |
-| `ui` | React 19 + TypeScript + Vite: autocomplete combobox, live "how your query is read" line, highlighted snippets, did-you-mean, paging, light/dark themes |
+| `sf-api` | Spring Boot 4.1: live web search `/api/web` (web + images) and `/api/web/suggest` through Brave, SearXNG or open sources; local-index `/api/search`, `/api/suggest`, `/api/stats`; Caffeine caches, per-IP token bucket (proxy-aware), security headers + CSP, RFC 9457 errors, Micrometer metrics |
+| `ui` | React 19 + TypeScript + Vite: Google-style home and results pages, logo, All / Images tabs, favicons and thumbnails, image row and image grid with preview, autocomplete, did-you-mean, paging, light/dark themes |
 | `sf-bench` | JMH latency benchmarks and a P@10 / nDCG@10 relevance evaluator |
 
 ## Targets and measured results
@@ -51,6 +60,15 @@ cd ui; npm ci; npm run build; cd ..
 .\gradlew.bat :sf-api:bootRun
 ```
 
+Live results with no setup come from the open sources. For Google-like results either set a
+Brave key (`$env:BRAVE_API_KEY = "<key>"`) or start the bundled SearXNG and point at it:
+
+```powershell
+docker compose up -d searxng                     # private metasearch on 127.0.0.1:8888
+$env:SEARXNG_URL = "http://127.0.0.1:8888"; .\gradlew.bat :sf-api:bootRun
+# or run everything in Docker: docker compose up -d --build   -> http://localhost:8090
+```
+
 Port 8080 taken? `$env:PORT = "8090"` before `bootRun`. For UI development with hot reload,
 run `npm run dev` in `ui/` (set `$env:SF_API = "http://localhost:8090"` if you changed the port).
 
@@ -70,10 +88,14 @@ docker build -t searchforge .
 docker run --rm -p 8080:8080 -m 512m --cpus 0.5 searchforge
 ```
 
-## Search syntax
+## API
 
-`java streams` both words, `java OR kotlin` either, `"stream api"` exact phrase,
-`java -android` leave a word out.
+| Endpoint | What it returns |
+|---|---|
+| `GET /api/web?q=house&type=web&page=1` | Live web results (`type=images` for images; pages 1-10) |
+| `GET /api/web/suggest?q=hou` | Autocomplete suggestions |
+| `GET /api/web/info` | Which provider is active |
+| `GET /api/search?q=...` | Search over the local crawl index (syntax: `a b`, `a OR b`, `"a b"`, `-a`) |
 
 ## Quality gates
 
@@ -86,5 +108,6 @@ JaCoCo gate of 80% line coverage per module. CI also runs the UI type check, tes
 - [ADR-000](docs/adr/ADR-000-scope-corpus-ethics-user-agent.md): crawl scope, ethics, User-Agent
 - [ADR-001](docs/adr/ADR-001-hosting-render-free.md): free hosting on Render, index inside the image
 - [ADR-002](docs/adr/ADR-002-no-database-in-v1.md): no PostgreSQL or Redis in v1
+- [ADR-003](docs/adr/ADR-003-live-web-search-providers.md): live internet results through Brave, SearXNG or open sources
 - [Architecture](docs/architecture.md), [Operations](docs/OPERATIONS.md), [Security](SECURITY.md)
 - Theory for every algorithm: [docs/guide/](docs/guide/)
