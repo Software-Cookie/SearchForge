@@ -5,6 +5,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -13,11 +14,20 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 // Small JSON-over-HTTPS client shared by the providers. Every failure becomes an
 // UpstreamException so callers handle one error type.
+// Two guards protect the small instance under load: at most MAX_IN_FLIGHT upstream calls run
+// at once (a spike queues briefly, then fails fast instead of piling up thousands of sockets),
+// and an upstream body larger than MAX_BODY_BYTES is rejected instead of filling the heap.
 public final class Http {
+
+    static final int MAX_IN_FLIGHT = 64;
+    static final int MAX_BODY_BYTES = 4 * 1024 * 1024;
+    private static final long QUEUE_WAIT_MS = 2000;
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final Pattern WEB_URL = Pattern.compile(
@@ -26,6 +36,7 @@ public final class Http {
     private final HttpClient client;
     private final Duration timeout;
     private final String userAgent;
+    private final Semaphore inFlight = new Semaphore(MAX_IN_FLIGHT);
 
     public Http(WebSearchProperties props) {
         this.timeout = Duration.ofMillis(props.timeoutMs());
@@ -42,18 +53,34 @@ public final class Http {
                 .header("Accept", "application/json")
                 .header("User-Agent", userAgent);
         headers.forEach(req::header);
+        boolean acquired = false;
         try {
-            HttpResponse<String> res = client.send(req.build(),
-                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            if (res.statusCode() != 200) {
-                throw new UpstreamException(host(url) + " answered HTTP " + res.statusCode());
+            acquired = inFlight.tryAcquire(QUEUE_WAIT_MS, TimeUnit.MILLISECONDS);
+            if (!acquired) {
+                throw new UpstreamException(host(url) + " skipped: too many calls in flight");
             }
-            return JSON.readTree(res.body());
+            HttpResponse<InputStream> res = client.send(req.build(),
+                    HttpResponse.BodyHandlers.ofInputStream());
+            try (InputStream body = res.body()) {
+                if (res.statusCode() != 200) {
+                    throw new UpstreamException(host(url) + " answered HTTP " + res.statusCode());
+                }
+                byte[] bytes = body.readNBytes(MAX_BODY_BYTES + 1);
+                if (bytes.length > MAX_BODY_BYTES) {
+                    throw new UpstreamException(host(url) + " sent more than "
+                            + MAX_BODY_BYTES + " bytes");
+                }
+                return JSON.readTree(new String(bytes, StandardCharsets.UTF_8));
+            }
         } catch (IOException | JacksonException e) {
             throw new UpstreamException(host(url) + " failed: " + e.getMessage(), e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new UpstreamException(host(url) + " interrupted", e);
+        } finally {
+            if (acquired) {
+                inFlight.release();
+            }
         }
     }
 

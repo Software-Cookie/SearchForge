@@ -21,11 +21,20 @@ final class StubWeb implements AutoCloseable {
     final Map<String, Reply> routes = new ConcurrentHashMap<>();
     final List<String> requests = new CopyOnWriteArrayList<>();
     final List<String> tokens = new CopyOnWriteArrayList<>();
+    volatile long delayMs; // lets tests make concurrent requests overlap
     private final HttpServer server;
 
     StubWeb() throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor());
         server.createContext("/", ex -> {
+            if (delayMs > 0) {
+                try {
+                    Thread.sleep(delayMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
             String target = ex.getRequestURI().toString();
             requests.add(target);
             String token = ex.getRequestHeaders().getFirst("X-Subscription-Token");

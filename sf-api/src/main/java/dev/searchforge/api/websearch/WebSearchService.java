@@ -1,6 +1,6 @@
 package dev.searchforge.api.websearch;
 
-import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -14,6 +14,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 // Live internet search: picks a provider at startup, caches answers for 15 minutes (results
@@ -22,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 public class WebSearchService {
 
     private static final Logger LOG = LoggerFactory.getLogger(WebSearchService.class);
+    private static final ExecutorService LOADERS = Executors.newVirtualThreadPerTaskExecutor();
 
     private record Key(String type, String query, int page) {
     }
@@ -29,8 +33,10 @@ public class WebSearchService {
     private final WebSearchProvider provider;
     private final Http http;
     private final WebSearchProperties props;
-    private final Cache<Key, WebSearchResponse> cache;
-    private final Cache<String, List<String>> suggestCache;
+    // Async caches hold one in-flight future per key, so concurrent identical searches wait
+    // on that future (no lock held while the upstream call runs) and share its answer.
+    private final AsyncCache<Key, WebSearchResponse> cache;
+    private final AsyncCache<String, List<String>> suggestCache;
     private final Timer timer;
 
     public WebSearchService(WebSearchProperties props, MeterRegistry registry) {
@@ -41,10 +47,10 @@ public class WebSearchService {
             case "searxng" -> new SearxngProvider(http, props);
             default -> new OpenProvider(http, props);
         };
-        this.cache = Caffeine.newBuilder().maximumSize(props.cacheSize())
-                .expireAfterWrite(Duration.ofMinutes(15)).recordStats().build();
-        this.suggestCache = Caffeine.newBuilder().maximumSize(props.cacheSize())
-                .expireAfterWrite(Duration.ofHours(1)).build();
+        this.cache = Caffeine.newBuilder().maximumSize(props.cacheSize()).executor(LOADERS)
+                .expireAfterWrite(Duration.ofMinutes(15)).recordStats().buildAsync();
+        this.suggestCache = Caffeine.newBuilder().maximumSize(props.cacheSize()).executor(LOADERS)
+                .expireAfterWrite(Duration.ofHours(1)).buildAsync();
         CaffeineCacheMetrics.monitor(registry, cache, "web");
         this.timer = Timer.builder("searchforge.web")
                 .description("Live web search latency, cache misses only")
@@ -60,10 +66,16 @@ public class WebSearchService {
     public WebSearchResponse search(String query, String type, int page) {
         String q = query.strip().replaceAll("\\s+", " ");
         Key key = new Key(type, q.toLowerCase(Locale.ROOT), page);
-        WebSearchResponse cached = cache.getIfPresent(key);
-        if (cached != null) {
-            return cached;
+        // A thousand people searching the same trending word at the same moment cause one
+        // upstream call, not a thousand.
+        WebSearchResponse res = await(cache.get(key, k -> fetch(q, type, page)));
+        if (res.results().isEmpty() && res.images().isEmpty()) {
+            cache.synchronous().invalidate(key); // an empty answer may be a transient glitch
         }
+        return res;
+    }
+
+    private WebSearchResponse fetch(String q, String type, int page) {
         long start = System.nanoTime();
         WebSearchResponse res;
         if ("images".equals(type)) {
@@ -76,9 +88,6 @@ public class WebSearchService {
                     p.didYouMean(), p.hits(), List.of());
         }
         timer.record(System.nanoTime() - start, TimeUnit.NANOSECONDS);
-        if (!res.results().isEmpty() || !res.images().isEmpty()) {
-            cache.put(key, res); // never cache an empty answer; it may be a transient glitch
-        }
         return res;
     }
 
@@ -88,7 +97,7 @@ public class WebSearchService {
         if (p.length() < 2) {
             return List.of();
         }
-        return suggestCache.get(p, k -> {
+        return await(suggestCache.get(p, k -> {
             try {
                 JsonNode root = http.getJson(props.wikipediaUrl()
                         + "/w/api.php?action=opensearch&format=json&namespace=0&limit=8&search="
@@ -104,7 +113,19 @@ public class WebSearchService {
             } catch (UpstreamException e) {
                 return List.of(); // suggestions are optional
             }
-        });
+        }));
+    }
+
+    // The future's value, rethrowing the loader's own exception (an UpstreamException).
+    private static <T> T await(java.util.concurrent.CompletableFuture<T> f) {
+        try {
+            return f.join();
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof RuntimeException r) {
+                throw r;
+            }
+            throw e;
+        }
     }
 
     private static long ms(long startNanos) {

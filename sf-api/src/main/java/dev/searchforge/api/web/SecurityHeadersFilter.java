@@ -12,7 +12,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 // Browser hardening headers on every response, plus cache rules for the static UI:
-// hashed /assets/* files are immutable; index.html must always be revalidated.
+// hashed /assets/* files are immutable; index.html must always be revalidated; the
+// un-hashed logos and icons are cached for a day.
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class SecurityHeadersFilter extends OncePerRequestFilter {
@@ -41,6 +42,8 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
             res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
         } else if (path.equals("/") || path.equals("/index.html")) {
             res.setHeader("Cache-Control", "no-cache");
+        } else if (path.endsWith(".png") && path.indexOf('/', 1) < 0) {
+            res.setHeader("Cache-Control", "public, max-age=86400");
         }
         chain.doFilter(req, res);
     }

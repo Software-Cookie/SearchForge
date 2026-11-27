@@ -240,4 +240,33 @@ class WebSearchTest {
         stub.fail("/wiki/w/api.php?action=opensearch", 500);
         assertThat(service.suggest("zzz")).isEmpty();
     }
+
+    @Test
+    void concurrentIdenticalSearchesShareOneUpstreamCall() throws Exception {
+        stub.on("/sx/search", json("{'results':[{'url':'https://a.example/','title':'A',"
+                + "'content':'house'}]}"));
+        stub.delayMs = 300;
+        WebSearchService service = new WebSearchService(stub.props("searxng"),
+                new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
+        try (var pool = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            var futures = new java.util.ArrayList<java.util.concurrent.Future<WebSearchResponse>>();
+            for (int i = 0; i < 50; i++) {
+                futures.add(pool.submit(() -> service.search("House ", "web", 1)));
+            }
+            for (var f : futures) {
+                assertThat(f.get().results()).hasSize(1);
+            }
+        }
+        assertThat(stub.requests).hasSize(1);
+    }
+
+    @Test
+    void oversizedUpstreamBodyIsRejected() {
+        stub.on("/sx/search", "{\"results\":[],\"pad\":\""
+                + "x".repeat(Http.MAX_BODY_BYTES) + "\"}");
+        Http http = new Http(stub.props("searxng"));
+        assertThatThrownBy(() -> http.getJson(stub.url() + "/sx/search"))
+                .isInstanceOf(UpstreamException.class)
+                .hasMessageContaining("more than");
+    }
 }

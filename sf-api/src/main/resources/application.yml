@@ -23,6 +23,12 @@ spring:
   lifecycle:
     timeout-per-shutdown-phase: 10s
 
+logging:
+  level:
+    # ApiExceptionHandler already logs one line per failed upstream call; without this,
+    # Caffeine adds a full stack trace for each one and an outage floods the logs.
+    com.github.benmanes.caffeine.cache.LocalAsyncCache: ERROR
+
 management:
   endpoints:
     web:

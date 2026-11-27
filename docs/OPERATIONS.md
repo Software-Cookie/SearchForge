@@ -32,6 +32,23 @@ The provider is picked at startup and logged as `Live web search provider: <name
 Rotate a Brave key: create a new key in the Brave dashboard, paste it into Render, let the
 service redeploy, then delete the old key. Never commit keys; `.env` is git-ignored.
 
+## Capacity (measured 2026-11-27, see RESULTS.md)
+
+Load tests use `loadtest/journey.js` (people typing, searching, paging, opening images,
+reading 5-15 s) against a local container and `loadtest/upstream_stub.py`. Never point them
+at production or at the real search APIs.
+
+| Render plan | What it handles |
+|---|---|
+| Free (0.1 CPU, 512 MB) | A demo. 100 active users already give p95 6.6 s; it also sleeps when idle. |
+| 1 CPU (Standard) | 1,500-2,000 active users with p95 under 25 ms, as long as most searches repeat (cache hits). |
+
+The real ceiling is the live-search provider, not this server: each new query costs one
+upstream call. Brave's free plan allows about 1 call a second, so 1,500 users need a paid
+Brave plan or your own SearXNG. The server allows 64 upstream calls at once; beyond that it
+answers 502 "Web results are unavailable" within 2 s instead of piling up.
+With 1,500 users all typing different queries, p95 was 2.3 s with 1.4% such errors.
+
 ## Roll back
 
 Preferred: on GitHub, open the merged PR, click **Revert**, merge the revert PR.
